@@ -1,0 +1,36 @@
+#!/usr/bin/env python3
+
+import argparse
+import os
+from sys import exit
+import hashlib
+
+parser = argparse.ArgumentParser(
+    prog='check3um',
+    description='Recursively calculate checksums of all file inside given directory and output is to stdout. check3um ignores symlinks.',
+    epilog='Program home: https://github.com/sigsergv/check3um')
+
+parser.add_argument('start_path', metavar='START_PATH',
+	help='Checksum start directory or file.')
+parser.add_argument('-c', dest='checksum_alg', default='md5', choices=['md5', 'sha1', 'sha256'],
+	help='Checksum algorithm, default is `md5`')
+
+args = parser.parse_args()
+
+if not os.path.exists(args.start_path):
+	print(f'`{args.start_path}` must be an existing directory.')
+	exit(1)
+
+if not os.path.isdir(args.start_path):
+	print(f'`{args.start_path}` must be a directory.')
+	exit(1)
+
+
+for dirpath, dirnames, filenames in os.walk(args.start_path):
+	filenames.sort()
+	for fn in filenames:
+		full_path = os.path.join(dirpath, fn)
+		rel_path = os.path.relpath(full_path, args.start_path)
+		with open(full_path, 'rb') as fp:
+			digest = hashlib.file_digest(fp, args.checksum_alg)
+			print('{digest} {path}'.format(digest=digest.hexdigest(), path=rel_path))
